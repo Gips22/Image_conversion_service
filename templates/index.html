@@ -1,10 +1,42 @@
-<form action="/store/png" method="post" accept-charset="utf-8"
-      enctype="multipart/form-data">
-
-    <label for="png_file">Choose png file to convert</label>
-    <input id="png_file" name="png_file" type="file" value=""
-    accept=".png"/>
-
-    <input type="submit" value="submit"/>
-    {{title}}
-</form>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Converter</title>
+</head>
+<body>
+  <h1>Image Converter</h1>
+  <form>
+    <input type="file" id="file-input" accept="image/png">
+    <button type="button" onclick="upload()">Upload</button>
+  </form>
+  <br>
+  <div id="status"></div>
+  <br>
+  <a id="download-link" href="#" style="display: none;"></a>
+</body>
+<script>
+  const ws = new WebSocket("ws://localhost:8080/convert");
+  const statusDiv = document.getElementById("status");
+  const downloadLink = document.getElementById("download-link");
+  ws.onopen = function(event){
+    statusDiv.innerHTML = "Connected";
+  }
+  ws.onmessage = function(event) {
+    statusDiv.innerHTML = event.data;
+    if (event.data.startsWith("Converted image available at: ")) {
+      downloadLink.href = event.data.substring(30);
+      downloadLink.innerHTML = "Download";
+      downloadLink.style.display = "block";
+    }
+  }
+  function upload() {
+    const fileInput = document.getElementById("file-input");
+    const file = fileInput.files[0];
+    const fileReader = new FileReader();
+    fileReader.onload = function() {
+      ws.send(new Uint8Array(this.result));
+    }
+    fileReader.readAsArrayBuffer(file);
+  }
+</script>
+</html>
