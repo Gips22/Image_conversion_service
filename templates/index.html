@@ -2,6 +2,19 @@
 <html>
 <head>
   <title>Image Converter</title>
+  <style>
+    #status-window {
+      width: 50%;
+      background-color: yellow;
+      padding: 20px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    a#download-link {
+      color: blue;
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <h1>Image Converter</h1>
@@ -10,7 +23,9 @@
     <button type="button" onclick="upload()">Upload</button>
   </form>
   <br>
-  <div id="status"></div>
+  <div id="status-window">
+    <div id="status"></div>
+  </div>
   <br>
   <a id="download-link" href="#" style="display: none;"></a>
 </body>
@@ -24,7 +39,7 @@
   ws.onmessage = function(event) {
     statusDiv.innerHTML = event.data;
     if (event.data.startsWith("Converted image available at: ")) {
-      downloadLink.href = event.data.substring(30);
+      downloadLink.href = "/download/" + event.data.substring(30);
       downloadLink.innerHTML = "Download";
       downloadLink.style.display = "block";
     }

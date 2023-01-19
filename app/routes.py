@@ -1,10 +1,10 @@
-from app.views import index, handle
-from aiohttp.abc import Application
-import aiohttp
+from aiohttp import web
+
+from app.views import index, handle, download
 
 
-
-# настраиваем пути, которые будут вести к нашей странице
-def setup_routes(app: Application):
+def setup_routes(app: web.Application):
+    """Настраиваем пути, которые будут вести к нашей странице"""
     app.router.add_get("/", index)
-    app.add_routes([aiohttp.web.get('/convert', handle)])
+    app.router.add_get('/convert', handle)  # роут для обработки веб-сокет соединения, отношения к url- не имеет
+    app.router.add_get("/download/{key}", download)
