@@ -1,11 +1,13 @@
-import asyncio
+import io
 
+import asyncio
 import aiohttp
 import aiohttp_jinja2
 from aiohttp import web
-import io
+
 import PIL.Image
 import redis
+
 import celery_config
 from celery_config import delete_image
 
@@ -23,13 +25,15 @@ delete_image.apply_async(args=[2], countdown=86400)
 
 async def download(request):
     key = request.match_info["key"]
-    print(key)
     img_bytes = r.get(f"image_converted:{key}")
     if not img_bytes:
         raise aiohttp.web.HTTPNotFound()
     r.incr(f"download:{key}")
-    celery_config.delete_image.delay(key)
-    print('действие после delete_image')
+    try:
+        delete_image.apply_async(args=[key], countdown=86400)
+        celery_config.delete_image.delay(key)
+    except Exception as ex:
+        print(ex)
     return aiohttp.web.Response(
         body=img_bytes,
         headers={
