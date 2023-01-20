@@ -3,15 +3,19 @@
 <head>
   <title>Image Converter</title>
   <style>
-    #status-window {
-      width: 50%;
-      background-color: yellow;
-      padding: 20px;
-      margin: 0 auto;
+    body {
+      background-color: #2c3e50;
+      color: white;
       text-align: center;
     }
+    #status-window {
+      width: 50%;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid white;
+    }
     a#download-link {
-      color: blue;
+      color: white;
       text-decoration: underline;
     }
   </style>
@@ -39,7 +43,8 @@
   ws.onmessage = function(event) {
     statusDiv.innerHTML = event.data;
     if (event.data.startsWith("Converted image available at: ")) {
-      downloadLink.href = "/download/" + event.data.substring(30);
+      const key = event.data.substring(30);
+      downloadLink.href = "http://0.0.0.0:8080/download/" + event.data.substring(30);
       downloadLink.innerHTML = "Download";
       downloadLink.style.display = "block";
     }

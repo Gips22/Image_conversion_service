@@ -6,36 +6,10 @@ from aiohttp import web
 import io
 import PIL.Image
 import redis
-from celery_config import delete_image, app_celery
-from celery import Celery
-from celery.worker import worker
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import ProcessPoolExecutor
+import celery_config
+from celery_config import delete_image
 
-# app_celery = Celery('tasks', broker='redis://localhost:6379/0')
-# app_celery.worker_main(['worker', '--loglevel=info', '--queues=tasks'])
 r = redis.Redis()
-
-
-# @app_celery.task
-# def delete_image(key):
-#     """Celery функция для удаления картинок либо после того, как пользователь скачал,
-#     либо через сутки. Проверка в БД Redis"""
-#     # if r.get(f"download:{key}"):
-#         # проверка, скачал ли пользователь файл
-#     print("call function delete")
-#     try:
-#         r.delete(f"image:{key}")
-#         r.delete(f"image_converted:{key}")
-#         r.delete(f"download:{key}")
-#     except Exception as ex:
-#         print(ex)
-
-    # else:
-    #     # если не скачал, удаляем через сутки
-    #     r.expire(f"image:{key}", 86400)
-    #     r.expire(f"image_converted:{key}", 86400)
-    #     r.expire(f"download:{key}", 86400)
 
 
 @aiohttp_jinja2.template("index.html")
@@ -43,15 +17,19 @@ async def index(request: web.Request) -> web.Response:
     return {'title': 'sdfsdf'}
 
 
+celery_config.delete_image.delay(1)
+delete_image.apply_async(args=[2], countdown=86400)
+
+
 async def download(request):
-    """Функция обрабатывающая роут, отвечающий за скачивание файла"""
     key = request.match_info["key"]
     print(key)
     img_bytes = r.get(f"image_converted:{key}")
     if not img_bytes:
         raise aiohttp.web.HTTPNotFound()
     r.incr(f"download:{key}")
-    delete_image.apply_async((key,), countdown=1)
+    celery_config.delete_image.delay(key)
+    print('действие после delete_image')
     return aiohttp.web.Response(
         body=img_bytes,
         headers={
@@ -83,12 +61,9 @@ async def handle(request):
             url = f"/download/{key}"
             await asyncio.sleep(1)
             await ws.send_str(f"Конвертированное изображение доступно по ссылке: {url}")
-            executor = ProcessPoolExecutor()
-            executor.submit(delete_image.delay, key)
-
-            delete_image.apply_async((key,), countdown=86400)
+            # executor = ProcessPoolExecutor()
+            # executor.submit(delete_image.delay, key)
+            #
+            # delete_image.apply_async(args=[key], countdown=86400)
             r.set(f"download:{key}", 1)
         return ws
-
-
-"""если прользователь тскачал-сделать событие-проверять"""

@@ -1,6 +1,6 @@
 from aiohttp import web
 
-from app.views import index, handle, download
+from views import index, handle, download
 
 
 def setup_routes(app: web.Application):
