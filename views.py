@@ -4,12 +4,15 @@ import asyncio
 import aiohttp
 import aiohttp_jinja2
 from aiohttp import web
+from concurrent.futures import ProcessPoolExecutor
 
 import PIL.Image
 import redis
 
 import celery_config
-from celery_config import delete_image
+from tasks import delete_image
+
+
 
 r = redis.Redis()
 
@@ -19,7 +22,6 @@ async def index(request: web.Request) -> web.Response:
     return {'title': 'sdfsdf'}
 
 
-celery_config.delete_image.delay(1)
 delete_image.apply_async(args=[2], countdown=86400)
 
 
@@ -31,7 +33,6 @@ async def download(request):
     r.incr(f"download:{key}")
     try:
         delete_image.apply_async(args=[key], countdown=86400)
-        celery_config.delete_image.delay(key)
     except Exception as ex:
         print(ex)
     return aiohttp.web.Response(
@@ -44,19 +45,20 @@ async def download(request):
 
 
 async def handle(request):
-    """Функция для обработки веб-сокет соединения"""
+    """Function to handle websocket connection"""
     ws = aiohttp.web.WebSocketResponse()
     await ws.prepare(request)
-    async for msg in ws:
+    while True:
+        msg = await ws.receive()
         if msg.type == aiohttp.WSMsgType.BINARY:
             img_bytes = msg.data
             image = PIL.Image.open(io.BytesIO(img_bytes))
             if image.format != "PNG":
-                await ws.send_str("Неправильный формат загруженного изображения. Поддерживается только PNG.")
+                await ws.send_str("Invalid image format. Only PNG is supported.")
                 continue
-            key = r.incr("image_id")  # увеличиваем счетчик скаченных изображений
+            key = r.incr("image_id")  # increase counter for uploaded images
             r.set(f"image:{key}", img_bytes)
-            await ws.send_str("Изображение загружено.")
+            await ws.send_str("Image uploaded.")
             image_converted = image.convert("RGB")
             buffer = io.BytesIO()
             image_converted.save(buffer, format="JPEG")
@@ -64,10 +66,14 @@ async def handle(request):
             r.set(f"image_converted:{key}", img_bytes_converted)
             url = f"/download/{key}"
             await asyncio.sleep(1)
-            await ws.send_str(f"Конвертированное изображение доступно по ссылке: {url}")
-            # executor = ProcessPoolExecutor()
-            # executor.submit(delete_image.delay, key)
-            #
-            # delete_image.apply_async(args=[key], countdown=86400)
+            await ws.send_str(f"Converted image available at: {url}")
+            delete_image.apply_async(args=[key], countdown=86400)
+            print("after delete_im_apply")
             r.set(f"download:{key}", 1)
-        return ws
+        elif msg.type == aiohttp.WSMsgType.ERROR:
+            print('ws connection closed with exception %s' % ws.exception())
+            break
+    return ws
+
+
+

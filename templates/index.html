@@ -44,7 +44,7 @@
     statusDiv.innerHTML = event.data;
     if (event.data.startsWith("Converted image available at: ")) {
       const key = event.data.substring(30);
-      downloadLink.href = "http://0.0.0.0:8080/download/" + event.data.substring(30);
+      downloadLink.href = "http://0.0.0.0:8080" + key;
       downloadLink.innerHTML = "Download";
       downloadLink.style.display = "block";
     }
