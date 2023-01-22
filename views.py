@@ -21,8 +21,8 @@ r = redis.Redis()
 async def index(request: web.Request) -> web.Response:
     return {'title': 'sdfsdf'}
 
-
-delete_image.apply_async(args=[2], countdown=86400)
+# delete_image.delay(2)
+# delete_image.apply_async(args=[5], countdown=86400)
 
 
 async def download(request):
@@ -32,7 +32,7 @@ async def download(request):
         raise aiohttp.web.HTTPNotFound()
     r.incr(f"download:{key}")
     try:
-        delete_image.apply_async(args=[key], countdown=86400)
+        delete_image.apply_async(args=[key], countdown=20)
     except Exception as ex:
         print(ex)
     return aiohttp.web.Response(
