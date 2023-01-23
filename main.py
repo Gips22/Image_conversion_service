@@ -1,6 +1,5 @@
 import aiohttp_jinja2
 from aiohttp import web
-
 import jinja2
 
 routes = web.RouteTableDef()  # используется для создания и конфигурирования роутинга в aiohttp.
@@ -31,9 +30,3 @@ if __name__ == "__main__":
     setup_app(app)  # настройка приложения
     web.run_app(app, host='0.0.0.0', port=8080)
 
-
-
-"""
-1. нужен ли jinja
-2. отображение ссылки кликабельной в файле index.html
-"""

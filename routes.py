@@ -1,3 +1,4 @@
+"""Настраиваем роуты в этом модуле"""
 from aiohttp import web
 
 from views import index, handle, download
