@@ -45,7 +45,7 @@ async def handle(request):
     и ожидается входящий запрос. Если поступает в соединение изображение png- оно
     сохраняется в БД, конвертируется и сохраняется сконвертированный вариант.
     Далее запускается отложенная на сутки celery задача для удаления файлов из базы."""
-    ws = aiohttp.web.WebSocketResponse()
+    ws = web.WebSocketResponse()
     await ws.prepare(request)
     while True:
         msg = await ws.receive()
