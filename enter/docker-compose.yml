@@ -1,0 +1,33 @@
+# версия compose file
+version: '3'
+services:
+  app:
+    # в качестве context используется родительская директория, имя dockerfile установлено по умолчанию
+    build: .
+    # задаем переменные среды
+    environment:
+      - PYTHONUNBUFFERED=1
+    # монтируем директории. Из корневой - в папку enter. Монтирование отличается от создания в dockerfile
+    # тем, что мы соединяем локальную директорию с директорией в контейнере и любые изменения
+    # в контейнере будут видны локально на хосте
+    volumes:
+      - ./templates:/app/templates
+    working_dir: /app
+    # проброс портов
+    ports:
+      - "8081:8080"
+    # этот образ будет общаться с redis
+    links:
+      - redis
+    # Ключевое слово 'depends_on' позволяет указывать, должен ли сервис,
+    # прежде чем запуститься, ждать, когда будут готовы к работе другие сервисы.
+    depends_on:
+      - redis
+    # Команда, которую нужно запустить после создания образа.
+    command: ["python", "main.py"]
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+    # https://github.com/mattkohl/docker-flask-celery-redis
