@@ -1,0 +1,25 @@
+# версия compose file
+version: '3'
+services:
+  web:
+    # в качестве context используется родительская директория, имя dockerfile установлено по умолчанию
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      - redis
+    volumes: ['.api:/api']
+#    links:
+#      - redis
+    # ждем запуск сначала:
+
+    command: ["python", "main.py"]
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+    # https://github.com/mattkohl/docker-flask-celery-redis
