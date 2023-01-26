@@ -7,11 +7,12 @@ from aiohttp import web
 import PIL.Image
 import redis
 from loguru import logger
+from worker import app_celery
 
-from tasks import delete_image
+
 
 logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", rotation="10 MB")
-r = redis.Redis()
+r = redis.Redis(host="redis", port=6379)
 
 
 @aiohttp_jinja2.template("index.html")
@@ -29,7 +30,8 @@ async def download(request):
     if not img_bytes:
         raise aiohttp.web.HTTPNotFound()
     r.incr(f"download:{key}")
-    delete_image.apply_async(args=[key], countdown=3)  # это task producer
+    app_celery.send_task('tasks.add', args=[key], countdown=3)
+    # delete_image.apply_async(args=[key], countdown=3)  # это task producer
     return aiohttp.web.Response(
         body=img_bytes,
         headers={
@@ -66,7 +68,7 @@ async def handle(request):
             url = f"/download/{key}"
             await asyncio.sleep(1)
             await ws.send_str(f"Converted image available at: {url}")
-            delete_image.apply_async(args=[key], countdown=86400)
+            # delete_image.apply_async(args=[key], countdown=86400)
             r.set(f"download:{key}", 1)
         elif msg.type == aiohttp.WSMsgType.ERROR:
             logger.error('Веб-сокет соедиенние закрыто с ошибкой %s' % ws.exception())

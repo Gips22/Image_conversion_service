@@ -8,15 +8,20 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "8081:8080"
+      - "8080:8080"
     depends_on:
       - redis
-    volumes: ['.api:/api']
-#    links:
-#      - redis
+#    volumes: ['.api:/api']
+    links:
+      - redis
     # ждем запуск сначала:
-
-    command: ["python", "main.py"]
+  worker:
+    build:
+      context: celery_queue
+      dockerfile: Dockerfile
+    command: celery -A tasks worker -l info -E
+    depends_on:
+      - redis
   redis:
     image: redis:latest
     ports:
