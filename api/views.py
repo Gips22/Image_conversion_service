@@ -7,8 +7,8 @@ from aiohttp import web
 import PIL.Image
 import redis
 from loguru import logger
-from worker import app_celery
 
+from worker import app_celery
 
 
 logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", rotation="10 MB")
@@ -25,6 +25,7 @@ async def index(request: web.Request):
 async def download(request):
     """Асинхронная функция вызываемая при скачивании изображения.
     Также запускает celery для удаления файлов из redis исходя из ТЗ."""
+    print("OoOOOOOOOOOOOO")
     key = request.match_info["key"]
     img_bytes = r.get(f"image_converted:{key}")
     if not img_bytes:

@@ -17,7 +17,7 @@ services:
     # ждем запуск сначала:
   worker:
     build:
-      context: celery_queue
+      context: ./celery_queue
       dockerfile: Dockerfile
     command: celery -A tasks worker -l info -E
     depends_on:
