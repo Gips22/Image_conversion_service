@@ -2,7 +2,6 @@
 version: '3'
 services:
   web:
-    # в качестве context используется родительская директория, имя dockerfile установлено по умолчанию
     build:
       context: ./api
       dockerfile: Dockerfile
@@ -11,10 +10,10 @@ services:
       - "8080:8080"
     depends_on:
       - redis
-#    volumes: ['.api:/api']
+    volumes: ['.api:/api']
     links:
       - redis
-    # ждем запуск сначала:
+
   worker:
     build:
       context: ./celery_queue
@@ -22,6 +21,7 @@ services:
     command: celery -A tasks worker -l info -E
     depends_on:
       - redis
+
   redis:
     image: redis:latest
     ports:

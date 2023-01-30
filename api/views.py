@@ -25,14 +25,13 @@ async def index(request: web.Request):
 async def download(request):
     """Асинхронная функция вызываемая при скачивании изображения.
     Также запускает celery для удаления файлов из redis исходя из ТЗ."""
-    print("OoOOOOOOOOOOOO")
     key = request.match_info["key"]
     img_bytes = r.get(f"image_converted:{key}")
     if not img_bytes:
         raise aiohttp.web.HTTPNotFound()
     r.incr(f"download:{key}")
-    app_celery.send_task('tasks.add', args=[key], countdown=3)
-    # delete_image.apply_async(args=[key], countdown=3)  # это task producer
+    app_celery.send_task('tasks.add', args=[key], countdown=3)  # это task producer
+    # delete_image.apply_async(args=[key], countdown=3)
     return aiohttp.web.Response(
         body=img_bytes,
         headers={
@@ -69,6 +68,7 @@ async def handle(request):
             url = f"/download/{key}"
             await asyncio.sleep(1)
             await ws.send_str(f"Converted image available at: {url}")
+            app_celery.send_task('tasks.add', args=[key], countdown=86400)
             # delete_image.apply_async(args=[key], countdown=86400)
             r.set(f"download:{key}", 1)
         elif msg.type == aiohttp.WSMsgType.ERROR:
