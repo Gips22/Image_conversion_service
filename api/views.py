@@ -1,3 +1,4 @@
+"""Views для обработки http и ws роутов"""
 import io
 
 import asyncio
@@ -9,7 +10,6 @@ import redis
 from loguru import logger
 
 from worker import app_celery
-
 
 logger.add("debug.log", format="{time} {level} {message}", level="DEBUG", rotation="10 MB")
 r = redis.Redis(host="redis", port=6379)
@@ -30,8 +30,12 @@ async def download(request):
     if not img_bytes:
         raise aiohttp.web.HTTPNotFound()
     r.incr(f"download:{key}")
-    app_celery.send_task('tasks.add', args=[key], countdown=3)  # это task producer
-    # delete_image.apply_async(args=[key], countdown=3)
+    task_id = r.get(f"task_id:{key}").decode()
+    if task_id:
+        app_celery.control.revoke(task_id)  # помечаем флагом отмены задачу celery на удаление через сутки
+    app_celery.send_task('tasks.add', args=[key],
+                         countdown=3)  # это task producer, кот отправляет задачу на удаление изображений из redis через 3 секунды
+    # delete_image.apply_async(args=[key], countdown=3)  # альтернативный метод
     return aiohttp.web.Response(
         body=img_bytes,
         headers={
@@ -68,9 +72,10 @@ async def handle(request):
             url = f"/download/{key}"
             await asyncio.sleep(1)
             await ws.send_str(f"Converted image available at: {url}")
-            app_celery.send_task('tasks.add', args=[key], countdown=86400)
-            # delete_image.apply_async(args=[key], countdown=86400)
+            task = app_celery.send_task('tasks.add', args=[key], countdown=86400)
             r.set(f"download:{key}", 1)
+            task_id = task.id
+            r.set(f"task_id:{key}", task_id)
         elif msg.type == aiohttp.WSMsgType.ERROR:
             logger.error('Веб-сокет соедиенние закрыто с ошибкой %s' % ws.exception())
             break

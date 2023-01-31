@@ -1,3 +1,4 @@
+"""Файл входа. Создание и настройка приложения."""
 import aiohttp_jinja2
 from aiohttp import web
 import jinja2

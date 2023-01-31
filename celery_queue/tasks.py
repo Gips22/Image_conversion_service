@@ -20,3 +20,4 @@ def delete_image(key):
             r.delete(f"download:{key}")
         except Exception as ex:
             logger.error("Ошибка при удалении данных из БД", ex)
+

@@ -1,16 +1,16 @@
-# версия compose file
 version: '3'
 services:
   web:
+    restart: always
     build:
       context: ./api
       dockerfile: Dockerfile
-    restart: always
     ports:
       - "8080:8080"
     depends_on:
       - redis
-    volumes: ['.api:/api']
+    volumes:
+      - ./:/app
     links:
       - redis
 
@@ -18,13 +18,31 @@ services:
     build:
       context: ./celery_queue
       dockerfile: Dockerfile
-    command: celery -A tasks worker -l info -E
+    volumes:
+      - ./:/app
     depends_on:
       - redis
+    command: celery -A tasks worker -l info -E
 
   redis:
     image: redis:latest
+    restart: always
     ports:
       - "6379:6379"
 
-    # https://github.com/mattkohl/docker-flask-celery-redis
+  monitor:
+    build:
+      context: ./celery_queue
+      dockerfile: Dockerfile
+    ports:
+      - "5555:5555"
+    command: celery -A tasks flower
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+      - worker
+    volumes: ['./celery_queue:/queue']
+
+
